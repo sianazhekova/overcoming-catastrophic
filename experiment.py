@@ -3,7 +3,7 @@ import numpy as np
 from copy import deepcopy
 from tensorflow.examples.tutorials.mnist import input_data
 
-%matplotlib inline
+#%matplotlib inline
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 from IPython import display
