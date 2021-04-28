@@ -6,7 +6,7 @@ from IPython import display
 
 # variable initialization functions
 def weight_variable(shape):
-    initial = tf.truncated_normal(shape, stddev=0.1)
+    initial = tf.random.truncated_normal(shape, stddev=0.1)
     return tf.Variable(initial)
 
 def bias_variable(shape):
@@ -34,12 +34,12 @@ class Model:
         self.var_list = [W1, b1, W2, b2]
 
         # vanilla single-task loss
-        self.cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=self.y))
+        self.cross_entropy = tf.reduce_mean(input_tensor=tf.nn.softmax_cross_entropy_with_logits(labels=tf.stop_gradient(y_), logits=self.y))
         self.set_vanilla_loss()
 
         # performance metrics
-        correct_prediction = tf.equal(tf.argmax(self.y,1), tf.argmax(y_,1))
-        self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+        correct_prediction = tf.equal(tf.argmax(input=self.y,axis=1), tf.argmax(input=y_,axis=1))
+        self.accuracy = tf.reduce_mean(input_tensor=tf.cast(correct_prediction, tf.float32))
 
     def compute_fisher(self, imgset, sess, num_samples=200, plot_diffs=False, disp_freq=10):
         # computer Fisher information for each parameter
@@ -51,14 +51,14 @@ class Model:
 
         # sampling a random class from softmax
         probs = tf.nn.softmax(self.y)
-        class_ind = tf.to_int32(tf.multinomial(tf.log(probs), 1)[0][0])
+        class_ind = tf.cast(tf.random.categorical(logits=tf.math.log(probs), num_samples=1)[0][0], dtype=tf.int32)
 
         if(plot_diffs):
             # track differences in mean Fisher info
             F_prev = deepcopy(self.F_accum)
             mean_diffs = np.zeros(0)
 
-        fish_gra = tf.gradients(tf.log(probs[0,class_ind]), self.var_list)
+        fish_gra = tf.gradients(ys=tf.math.log(probs[0,class_ind]), xs=self.var_list)
         for i in range(num_samples):
             # select random input image
             im_ind = np.random.randint(imgset.shape[0])
@@ -101,7 +101,7 @@ class Model:
                 sess.run(self.var_list[v].assign(self.star_vars[v]))
 
     def set_vanilla_loss(self):
-        self.train_step = tf.train.GradientDescentOptimizer(0.1).minimize(self.cross_entropy)
+        self.train_step = tf.compat.v1.train.GradientDescentOptimizer(0.1).minimize(self.cross_entropy)
 
     def update_ewc_loss(self, lam):
         # elastic weight consolidation
@@ -111,8 +111,8 @@ class Model:
             self.ewc_loss = self.cross_entropy
 
         for v in range(len(self.var_list)):
-            self.ewc_loss += (lam/2) * tf.reduce_sum(tf.multiply(self.F_accum[v].astype(np.float32),tf.square(self.var_list[v] - self.star_vars[v])))
-        self.train_step = tf.train.GradientDescentOptimizer(0.1).minimize(self.ewc_loss)
+            self.ewc_loss += (lam/2) * tf.reduce_sum(input_tensor=tf.multiply(self.F_accum[v].astype(np.float32),tf.square(self.var_list[v] - self.star_vars[v])))
+        self.train_step = tf.compat.v1.train.GradientDescentOptimizer(0.1).minimize(self.ewc_loss)
 
 
 

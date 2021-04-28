@@ -72,17 +72,17 @@ def train_task(model, num_iter, disp_freq, trainset, testsets, x, y_, lams=[0]):
 
 
 mnist = input_data.read_data_sets('MNIST_data', one_hot=True)
-sess = tf.InteractiveSession()
+sess = tf.compat.v1.InteractiveSession()
 
 # define input and target placeholders
-x = tf.placeholder(tf.float32, shape=[None, 784])
-y_ = tf.placeholder(tf.float32, shape=[None, 10])
+x = tf.compat.v1.placeholder(tf.float32, shape=[None, 784])
+y_ = tf.compat.v1.placeholder(tf.float32, shape=[None, 10])
 
 # instantiate new model
 model = Model(x, y_) # simple 2-layer network
 
 # initialize variables
-sess.run(tf.global_variables_initializer())
+sess.run(tf.compat.v1.global_variables_initializer())
 
 # training 1st task
 train_task(model, 800, 20, mnist, [mnist], x, y_, lams=[0])
